@@ -78,9 +78,10 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             new_feature_cols.append(lag_col_name)
 
     diff_features = []
-    for col in ['Vx (m/s)', 'Vy (m/s)', 'Vz (m/s)',]:
+    for col in ["Eccentricity",  "Semimajor Axis (m)",  "Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)",  "Latitude (deg)",
+                "Longitude (deg)",   "Altitude (m)",]:
         for i in [-2, -1, 1, 2]:
-            diff_col_name = f'{col}_pct_change_{i}'
+            diff_col_name = f'{col}_diff_{i}'
             diff_features.append(merged_data.groupby('ObjectID')[col].diff(
                 i).ffill().bfill().rename(diff_col_name))
             # Add the new feature to new_feature_cols
