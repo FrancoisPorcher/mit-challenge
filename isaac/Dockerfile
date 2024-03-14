@@ -19,7 +19,7 @@ WORKDIR /app
 
 # COPY WHATEVER OTHER SCRIPTS YOU MAY NEED
 COPY trained_model /trained_model
-COPY submission.py utils.py ./
+COPY submission_isaac.py utils_isaac.py node.py ./
  
  # SPECIFY THE ENTRYPOINT SCRIPT
-CMD python submission.py
+CMD python submission_isaac.py

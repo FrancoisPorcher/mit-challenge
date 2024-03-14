@@ -1,4 +1,5 @@
 import pandas as pd
+from tqdm import tqdm
 from fastcore.basics import Path
 import numpy as np
 import os
@@ -9,30 +10,25 @@ from pathlib import Path
 # Function to prepare the data in a tabular format
 
 
-def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, fill_na=True):
+def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_heurestic=False):
     merged_data = pd.DataFrame()
     test_data = Path(data_dir).glob('*.csv')
+
     # Check if test_data is empty
     if not test_data:
         raise ValueError(f'No csv files found in {data_dir}')
-    for data_file in test_data:
+    starttime = datetime.fromisoformat("2023-01-01 00:00:00+00:00")
+    endtime = datetime.fromisoformat("2023-07-01 00:00:00+00:00")
+    for data_file in tqdm(list(test_data)):
         data_df = pd.read_csv(data_file)
         data_df['ObjectID'] = int(data_file.stem)
         data_df['TimeIndex'] = range(len(data_df))
 
-        lagged_features = []
         new_feature_cols = list(feature_cols)  # Create a copy of feature_cols
-        # Create lagged features for each column in feature_cols
-        for col in feature_cols:
-            for i in range(1, lag_steps+1):
-                lag_col_name = f'{col}_lag_{i}'
-                data_df[lag_col_name] = data_df.groupby('ObjectID')[
-                    col].shift(i)
-                # Add the lagged feature to new_feature_cols
-                new_feature_cols.append(lag_col_name)
 
-        # Add the lagged features to the DataFrame all at once
-        data_df = pd.concat([data_df] + lagged_features, axis=1)
+        if add_heurestic:
+            data_df = add_baseline_heuristic(data_df, int(
+                data_file.stem), starttime, endtime, feature_cols)
 
         if ground_truth is None:
             merged_df = data_df
@@ -72,9 +68,58 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, fill
 
         merged_data = pd.concat([merged_data, merged_df])
 
-    # Fill missing values (for the lagged features)
-    if fill_na:
-        merged_data.bfill(inplace=True)
+    # Create lagged features for each column in feature_cols
+    lagged_features = []
+    for col in feature_cols:
+        for i in range(-lag_steps, lag_steps+1):
+            lag_col_name = f'{col}_lag_{i}'
+            lagged_features.append(merged_data.groupby('ObjectID')[
+                col].shift(i).ffill().bfill().rename(lag_col_name))
+            # Add the lagged feature to new_feature_cols
+            new_feature_cols.append(lag_col_name)
+
+    pct_features = []
+    for col in ['Vx (m/s)', 'Vy (m/s)', 'Vz (m/s)',]:
+        for i in [-1, 1]:
+            pct_col_name = f'{col}_pct_change_{i}'
+            pct_features.append(merged_data.groupby('ObjectID')[col].pct_change(
+                i).ffill().bfill().rename(pct_col_name))
+            # Add the new feature to new_feature_cols
+            new_feature_cols.append(pct_col_name)
+
+    # Add the lagged features to the DataFrame all at once
+    merged_data = pd.concat(
+        [merged_data] + lagged_features + pct_features, axis=1)
+
+    if add_heurestic:
+        dummies_ew = pd.get_dummies(merged_data[['EW_baseline_heuristic']])
+        dummies_ns = pd.get_dummies(merged_data[['NS_baseline_heuristic']])
+        dummies_ew_ffill = pd.get_dummies(
+            merged_data[['EW_baseline_heuristic_ffill']])
+        dummies_ns_ffill = pd.get_dummies(
+            merged_data[['NS_baseline_heuristic_ffill']])
+        merged_data = pd.concat(
+            [merged_data, dummies_ew, dummies_ns, dummies_ew_ffill, dummies_ns_ffill], axis=1)
+        new_feature_cols = new_feature_cols + \
+            list(dummies_ew.columns) + list(dummies_ns.columns) + \
+            list(dummies_ew_ffill.columns) + list(dummies_ns_ffill.columns)
+        for i in ['EW_baseline_heuristic_AD-NK', 'EW_baseline_heuristic_ID-NK', 'EW_baseline_heuristic_IK-CK', 'EW_baseline_heuristic_IK-EK',
+                  'EW_baseline_heuristic_SS-CK', 'EW_baseline_heuristic_SS-EK', 'EW_baseline_heuristic_SS-NK', 'NS_baseline_heuristic_ID-NK',
+                  'NS_baseline_heuristic_IK-CK', 'NS_baseline_heuristic_IK-EK', 'NS_baseline_heuristic_SS-CK', 'NS_baseline_heuristic_SS-EK',
+                  'NS_baseline_heuristic_SS-NK']:
+            if (i in new_feature_cols) == False:
+                merged_data[i] = 0
+                new_feature_cols.append(i)
+        for i in ['EW_baseline_heuristic_ffill_AD-NK', 'EW_baseline_heuristic_ffill_ID-NK', 'EW_baseline_heuristic_ffill_IK-CK',
+                  'EW_baseline_heuristic_ffill_IK-EK',
+                  'EW_baseline_heuristic_ffill_SS-CK', 'EW_baseline_heuristic_ffill_SS-EK', 'EW_baseline_heuristic_ffill_SS-NK',
+                  'NS_baseline_heuristic_ffill_ID-NK',
+                  'NS_baseline_heuristic_ffill_IK-CK', 'NS_baseline_heuristic_ffill_IK-EK', 'NS_baseline_heuristic_ffill_SS-CK',
+                  'NS_baseline_heuristic_ffill_SS-EK',
+                  'NS_baseline_heuristic_ffill_SS-NK']:
+            if (i in new_feature_cols) == False:
+                merged_data[i] = 0
+                new_feature_cols.append(i)
 
     return merged_data, new_feature_cols
 
@@ -583,3 +628,51 @@ def data_post_processing(nodes, starttime):
     prediction = pd.DataFrame(data)
 
     return prediction
+
+
+def data_to_add(data_df, ground_truth_object):
+    ground_truth_object.Type = ground_truth_object.Type.fillna('NK')
+    ground_truth_EW = ground_truth_object[ground_truth_object['Direction'] == 'EW'].copy(
+    )
+    ground_truth_NS = ground_truth_object[ground_truth_object['Direction'] == 'NS'].copy(
+    )
+
+    # Create 'EW' and 'NS' labels and fill 'unknown' values
+    ground_truth_EW['EW_baseline_heuristic'] = ground_truth_EW['Node'] + \
+        '-' + ground_truth_EW['Type']
+    ground_truth_NS['NS_baseline_heuristic'] = ground_truth_NS['Node'] + \
+        '-' + ground_truth_NS['Type']
+    ground_truth_EW.drop(
+        ['Node', 'Type', 'Direction'], axis=1, inplace=True)
+    ground_truth_NS.drop(
+        ['Node', 'Type', 'Direction'], axis=1, inplace=True)
+    merged_df = pd.merge(data_df,
+                         ground_truth_EW.sort_values('TimeIndex'),
+                         on=['TimeIndex', 'ObjectID'],
+                         how='left')
+    merged_df = pd.merge_ordered(merged_df,
+                                 ground_truth_NS.sort_values(
+                                     'TimeIndex'),
+                                 on=['TimeIndex', 'ObjectID'],
+                                 how='left')
+
+    # Fill 'unknown' values in 'EW' and 'NS' columns that come before the first valid observation
+    merged_df['EW_baseline_heuristic_ffill'] = merged_df['EW_baseline_heuristic'].ffill()
+    merged_df['NS_baseline_heuristic_ffill'] = merged_df['NS_baseline_heuristic'].ffill()
+
+    merged_df['EW_baseline_heuristic'].fillna('Nothing', inplace=True)
+    merged_df['NS_baseline_heuristic'].fillna('Nothing', inplace=True)
+
+    return merged_df
+
+
+def add_baseline_heuristic(data, objectId, starttime, endtime, feature_cols):
+    detected, ssEW, lon_std = detect_ew_pol_nodes(
+        data.loc[data.ObjectID == objectId][feature_cols], objectId, starttime, endtime)
+    nodes, filtered = filter_and_merge_nodes(
+        data.loc[data.ObjectID == objectId][feature_cols], detected, ssEW, lon_std,   objectId, starttime, endtime, 12)
+    nodes = detect_sn_pol_nodes(
+        data, nodes, filtered, objectId, starttime, 12)
+    merged_df = data_to_add(
+        data.loc[data.ObjectID == objectId], data_post_processing(nodes, starttime))
+    return merged_df
