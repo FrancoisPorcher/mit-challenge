@@ -1,5 +1,4 @@
 import pandas as pd
-from tqdm import tqdm
 from fastcore.basics import Path
 import numpy as np
 import os
@@ -19,7 +18,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         raise ValueError(f'No csv files found in {data_dir}')
     starttime = datetime.fromisoformat("2023-01-01 00:00:00+00:00")
     endtime = datetime.fromisoformat("2023-07-01 00:00:00+00:00")
-    for data_file in tqdm(list(test_data)):
+    for data_file in list(test_data):
         data_df = pd.read_csv(data_file)
         data_df['ObjectID'] = int(data_file.stem)
         data_df['TimeIndex'] = range(len(data_df))
@@ -78,6 +77,15 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             # Add the lagged feature to new_feature_cols
             new_feature_cols.append(lag_col_name)
 
+    diff_features = []
+    for col in ['Vx (m/s)', 'Vy (m/s)', 'Vz (m/s)',]:
+        for i in [-2, -1, 1, 2]:
+            diff_col_name = f'{col}_pct_change_{i}'
+            diff_features.append(merged_data.groupby('ObjectID')[col].diff(
+                i).ffill().bfill().rename(diff_col_name))
+            # Add the new feature to new_feature_cols
+            new_feature_cols.append(diff_col_name)
+
     pct_features = []
     for col in ['Vx (m/s)', 'Vy (m/s)', 'Vz (m/s)',]:
         for i in [-1, 1]:
@@ -87,9 +95,27 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             # Add the new feature to new_feature_cols
             new_feature_cols.append(pct_col_name)
 
+    rolling_features = []
+    for variable in ["Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)", "Altitude (m)",  "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)"]:
+        rolling_std_name = f'{variable}_rolling_std_12'
+        rolling_features.append(merged_data.groupby('ObjectID')[variable].apply(
+            lambda win: win.rolling(12, center=True).std().ffill().bfill()).rename(rolling_std_name))
+        new_feature_cols.append(rolling_std_name)
+        rolling_mean_name = f'{variable}_rolling_mean_12'
+        rolling_features.append(merged_data.groupby('ObjectID')[variable].apply(
+            lambda win: win.rolling(12, center=True).std().ffill().bfill()).rename(rolling_mean_name))
+        new_feature_cols.append(rolling_std_name)
+
+    charac_features = []
+    for factor in ["Altitude (m)", "Inclination (deg)"]:
+        charach_name = f'{factor}_charac'
+        charac_features.append(pd.merge(merged_data[['ObjectID', 'Timestamp']],
+                               merged_data.groupby('ObjectID')[factor].mean().rename(charach_name), on='ObjectID')[charach_name])
+        new_feature_cols.append(charach_name)
+
     # Add the lagged features to the DataFrame all at once
     merged_data = pd.concat(
-        [merged_data] + lagged_features + pct_features, axis=1)
+        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features, axis=1)
 
     if add_heurestic:
         dummies_ew = pd.get_dummies(merged_data[['EW_baseline_heuristic']])

@@ -64,6 +64,7 @@ test_data['Predicted_NS'] = test_data['Predicted_NS'].mask(
 
 # Print the first few rows of the test data with predictions for both EW and NS
 test_results = utils.convert_classifier_output(test_data)
+test_results.loc[test_results.TimeIndex == 0, 'Node'] = 'SS'
 
 # Save the test results to a csv file to be submitted to the challenge
 test_results.to_csv(TEST_PREDS_FP, index=False)
