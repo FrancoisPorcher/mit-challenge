@@ -146,9 +146,20 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         charac_features.append(added_data)
         new_feature_cols.append(charach_name)
 
+    # Create time data
+    # time_features = []
+    # for time_windows in [12, 12*3, 12*7, 12*14]:
+    #     time_name = f'time_{time_windows}'
+    #     added_data = merged_data.groupby('ObjectID')["Eccentricity"].apply(lambda group: pd.Series(
+    #         np.tile(np.arange(1, time_windows+1), len(group))[:len(group)])).rename(time_name)
+
+    #     added_data.index = merged_data.index
+    #     time_features.append(added_data)
+    #     new_feature_cols.append(time_name)
+
     # Add the lagged features to the DataFrame all at once
     merged_data = pd.concat(
-        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features, axis=1)
+        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features , axis=1)  #+ time_features
 
     if add_heurestic:
         dummies_ew = pd.get_dummies(merged_data[['EW_baseline_heuristic']])
