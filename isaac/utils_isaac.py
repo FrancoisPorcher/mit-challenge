@@ -9,7 +9,7 @@ from pathlib import Path
 # Function to prepare the data in a tabular format
 
 
-def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_heurestic=False):
+def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_heurestic=False, nb_of_ex=1000000):
     merged_data = pd.DataFrame()
     test_data = Path(data_dir).glob('*.csv')
 
@@ -18,7 +18,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         raise ValueError(f'No csv files found in {data_dir}')
     starttime = datetime.fromisoformat("2023-01-01 00:00:00+00:00")
     endtime = datetime.fromisoformat("2023-07-01 00:00:00+00:00")
-    for data_file in list(test_data):
+    for data_file in list(test_data)[:nb_of_ex]:
         data_df = pd.read_csv(data_file)
         data_df['ObjectID'] = int(data_file.stem)
         data_df['TimeIndex'] = range(len(data_df))
@@ -67,10 +67,27 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
 
         merged_data = pd.concat([merged_data, merged_df])
 
+    # envelope feature
+    enveloppe_feature = []
+    for factor in ["Latitude (deg)", "Longitude (deg)",  "Altitude (m)"]:
+        enveloppe_name = f'{factor}_enveloppe'
+        added_data = merged_data.groupby('ObjectID')[factor].apply(lambda win: win.rolling(3*12, center=True, min_periods=0).max()) - \
+            merged_data.groupby('ObjectID')[factor].apply(
+                lambda win: win.rolling(3*12, center=True, min_periods=0).min())
+        added_data = added_data.rename(enveloppe_name)
+        added_data.index = merged_data.index
+        new_feature_cols.append(enveloppe_name)
+        enveloppe_feature.append(added_data)
+
+    # do it now to compute diff on it
+    merged_data = pd.concat([merged_data] + enveloppe_feature, axis=1)
+
     # Create lagged features for each column in feature_cols
     lagged_features = []
+    list_lag = list(range(-lag_steps, lag_steps+1))
+    list_lag.remove(0)
     for col in feature_cols:
-        for i in range(-lag_steps, lag_steps+1):
+        for i in list_lag:
             lag_col_name = f'{col}_lag_{i}'
             lagged_features.append(merged_data.groupby('ObjectID')[
                 col].shift(i).ffill().bfill().rename(lag_col_name))
@@ -79,7 +96,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
 
     diff_features = []
     for col in ["Eccentricity",  "Semimajor Axis (m)",  "Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)",  "Latitude (deg)",
-                "Longitude (deg)",   "Altitude (m)",]:
+                "Longitude (deg)",   "Altitude (m)", "Latitude (deg)_enveloppe", "Longitude (deg)_enveloppe",  "Altitude (m)_enveloppe"]:
         for i in [-2, -1, 1, 2]:
             diff_col_name = f'{col}_diff_{i}'
             diff_features.append(merged_data.groupby('ObjectID')[col].diff(
@@ -97,21 +114,36 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             new_feature_cols.append(pct_col_name)
 
     rolling_features = []
-    for variable in ["Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)", "Altitude (m)",  "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)"]:
+    for variable in ["Eccentricity",  "Semimajor Axis (m)", "Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)", "Altitude (m)",
+                     "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)"]:
         rolling_std_name = f'{variable}_rolling_std_12'
-        rolling_features.append(merged_data.groupby('ObjectID')[variable].apply(
-            lambda win: win.rolling(12, center=True).std().ffill().bfill()).rename(rolling_std_name))
+        added_data = merged_data.groupby('ObjectID')[variable].apply(
+            lambda win: win.rolling(12, center=True).std().ffill().bfill()).rename(rolling_std_name)
+        added_data.index = merged_data.index
+        rolling_features.append(added_data)
         new_feature_cols.append(rolling_std_name)
         rolling_mean_name = f'{variable}_rolling_mean_12'
-        rolling_features.append(merged_data.groupby('ObjectID')[variable].apply(
-            lambda win: win.rolling(12, center=True).std().ffill().bfill()).rename(rolling_mean_name))
-        new_feature_cols.append(rolling_std_name)
+        added_data = merged_data.groupby('ObjectID')[variable].apply(
+            lambda win: win.rolling(12, center=True).mean().ffill().bfill()).rename(rolling_mean_name)
+        added_data.index = merged_data.index
+        rolling_features.append(added_data)
+        new_feature_cols.append(rolling_mean_name)
 
     charac_features = []
-    for factor in ["Altitude (m)", "Inclination (deg)"]:
-        charach_name = f'{factor}_charac'
-        charac_features.append(pd.merge(merged_data[['ObjectID', 'Timestamp']],
-                               merged_data.groupby('ObjectID')[factor].mean().rename(charach_name), on='ObjectID')[charach_name])
+    for factor in ["Eccentricity", "Semimajor Axis (m)", "Inclination (deg)", "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)", "Altitude (m)"]:
+        charach_name = f'{factor}_mean_charac'
+        added_data = pd.merge(merged_data[['ObjectID', 'Timestamp']],
+                              merged_data.groupby('ObjectID')[factor].mean().rename(charach_name), on='ObjectID', how='left')[charach_name]
+        added_data.index = merged_data.index
+        charac_features.append(added_data)
+        new_feature_cols.append(charach_name)
+
+    for factor in ["X (m)", "Y (m)", "Z (m)", "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)"]:
+        charach_name = f'{factor}_std_charac'
+        added_data = pd.merge(merged_data[['ObjectID', 'Timestamp']],
+                              merged_data.groupby('ObjectID')[factor].std().rename(charach_name), on='ObjectID', how='left')[charach_name]
+        added_data.index = merged_data.index
+        charac_features.append(added_data)
         new_feature_cols.append(charach_name)
 
     # Add the lagged features to the DataFrame all at once
