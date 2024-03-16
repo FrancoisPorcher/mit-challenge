@@ -22,8 +22,16 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         data_df = pd.read_csv(data_file)
         data_df['ObjectID'] = int(data_file.stem)
         data_df['TimeIndex'] = range(len(data_df))
+        data_df['Time36'] = pd.Series(
+            np.tile(np.arange(1, 36+1), len(data_df))[:len(data_df)])
 
         new_feature_cols = list(feature_cols)  # Create a copy of feature_cols
+
+        for time_windows in [6, 12, 12*3, 12*7, 12*14]:
+            time_name = f'time_{time_windows}'
+            data_df[time_name] = pd.Series(
+                np.tile(np.arange(1, time_windows+1), len(data_df))[:len(data_df)])
+            new_feature_cols.append(time_name)
 
         if add_heurestic:
             data_df = add_baseline_heuristic(data_df, int(
@@ -138,7 +146,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         charac_features.append(added_data)
         new_feature_cols.append(charach_name)
 
-    for factor in ["X (m)", "Y (m)", "Z (m)", "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)"]:
+    for factor in ["X (m)", "Y (m)", "Z (m)", "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)", "Eccentricity", "Altitude (m)", "Inclination (deg)"]:
         charach_name = f'{factor}_std_charac'
         added_data = pd.merge(merged_data[['ObjectID', 'Timestamp']],
                               merged_data.groupby('ObjectID')[factor].std().rename(charach_name), on='ObjectID', how='left')[charach_name]
@@ -146,20 +154,9 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         charac_features.append(added_data)
         new_feature_cols.append(charach_name)
 
-    # Create time data
-    # time_features = []
-    # for time_windows in [12, 12*3, 12*7, 12*14]:
-    #     time_name = f'time_{time_windows}'
-    #     added_data = merged_data.groupby('ObjectID')["Eccentricity"].apply(lambda group: pd.Series(
-    #         np.tile(np.arange(1, time_windows+1), len(group))[:len(group)])).rename(time_name)
-
-    #     added_data.index = merged_data.index
-    #     time_features.append(added_data)
-    #     new_feature_cols.append(time_name)
-
     # Add the lagged features to the DataFrame all at once
     merged_data = pd.concat(
-        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features , axis=1)  #+ time_features
+        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features, axis=1)
 
     if add_heurestic:
         dummies_ew = pd.get_dummies(merged_data[['EW_baseline_heuristic']])
@@ -746,3 +743,27 @@ def add_baseline_heuristic(data, objectId, starttime, endtime, feature_cols):
     merged_df = data_to_add(
         data.loc[data.ObjectID == objectId], data_post_processing(nodes, starttime))
     return merged_df
+
+
+# # Define the Random Forest model for NS
+# model_NS_preprocess = CatBoostClassifier(n_estimators=100, random_state=42)
+# # Fit the model to the training data for NS
+# model_NS_preprocess.fit(train_data[updated_feature_cols], train_data['NS_encoded'])
+
+# added_proba_feature_NS = pd.DataFrame(model_NS_preprocess.predict_proba(train_data[updated_feature_cols])).add_prefix('proba_feature_NS_')
+# added_proba_feature_NS.index = train_data.index
+# train_data = pd.concat([train_data,added_proba_feature_NS] ,axis=1)
+
+# # Define the Random Forest model for EW
+# model_EW = CatBoostClassifier(n_estimators=100, random_state=42)
+# # Fit the model to the training data for EW
+# model_EW.fit(train_data[updated_feature_cols+list(added_proba_feature_NS.columns)], train_data['EW_encoded'])
+
+# added_proba_feature_EW = pd.DataFrame( model_EW.predict_proba(train_data[updated_feature_cols+list(added_proba_feature_NS.columns)])).add_prefix('proba_feature_EW_')
+# added_proba_feature_EW.index = train_data.index
+# train_data = pd.concat([train_data,added_proba_feature_EW] ,axis=1)
+
+# # Define the Random Forest model for NS
+# model_NS = CatBoostClassifier(n_estimators=100, random_state=42)
+# # Fit the model to the training data for NS
+# model_NS.fit(train_data[updated_feature_cols+list(added_proba_feature_EW.columns)], train_data['NS_encoded'])
