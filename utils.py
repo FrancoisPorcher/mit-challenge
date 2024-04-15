@@ -5,15 +5,8 @@ import os
 from node import Node
 from datetime import datetime, timedelta
 from pathlib import Path
-# from statsmodels.tsa.seasonal import seasonal_decompose
 
 # Function to prepare the data in a tabular format
-
-
-# def decompose(series, period):
-#     decomposition = seasonal_decompose(
-#         series, model='additive', period=period)
-#     return decomposition.resid.ffill().bfill()
 
 
 def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_heurestic=False, nb_of_ex=1000000):
@@ -760,26 +753,3 @@ def add_baseline_heuristic(data, objectId, starttime, endtime, feature_cols):
         data.loc[data.ObjectID == objectId], data_post_processing(nodes, starttime))
     return merged_df
 
-
-# # Define the Random Forest model for NS
-# model_NS_preprocess = CatBoostClassifier(n_estimators=100, random_state=42)
-# # Fit the model to the training data for NS
-# model_NS_preprocess.fit(train_data[updated_feature_cols], train_data['NS_encoded'])
-
-# added_proba_feature_NS = pd.DataFrame(model_NS_preprocess.predict_proba(train_data[updated_feature_cols])).add_prefix('proba_feature_NS_')
-# added_proba_feature_NS.index = train_data.index
-# train_data = pd.concat([train_data,added_proba_feature_NS] ,axis=1)
-
-# # Define the Random Forest model for EW
-# model_EW = CatBoostClassifier(n_estimators=100, random_state=42)
-# # Fit the model to the training data for EW
-# model_EW.fit(train_data[updated_feature_cols+list(added_proba_feature_NS.columns)], train_data['EW_encoded'])
-
-# added_proba_feature_EW = pd.DataFrame( model_EW.predict_proba(train_data[updated_feature_cols+list(added_proba_feature_NS.columns)])).add_prefix('proba_feature_EW_')
-# added_proba_feature_EW.index = train_data.index
-# train_data = pd.concat([train_data,added_proba_feature_EW] ,axis=1)
-
-# # Define the Random Forest model for NS
-# model_NS = CatBoostClassifier(n_estimators=100, random_state=42)
-# # Fit the model to the training data for NS
-# model_NS.fit(train_data[updated_feature_cols+list(added_proba_feature_EW.columns)], train_data['NS_encoded'])
