@@ -19,43 +19,10 @@ def main_submission(path_to_dataset, path_to_model):
     TEST_DATA_DIR = Path(path_to_dataset)
     # TEST_PREDS_FP = Path('/submission/submission.csv')
 
-    def do_prediction(model, data, thresh, thresh_add):
-        def top_k(x, k):
-            ind = np.argpartition(x, -1*k)[-1*k:]
-            return ind[np.argsort(x[ind])]
-
-        def top_k_values(x, k):
-            ind = np.argpartition(x, -1*k)[-1*k:]
-            return x[ind][np.argsort(x[ind])]
-
-        pred_proba = pd.DataFrame(model.predict(
-            data, prediction_type='Probability'))
-        pred = pred_proba.idxmax(1)
-        print('Num of ex to cut', sum(pred_proba.max(1) < thresh))
-        nothing_index = pred.value_counts().index[0]
-        pred.loc[pred_proba.max(1) < thresh] = nothing_index
-
-        top_proba = pd.DataFrame(np.apply_along_axis(
-            lambda x: top_k(x, 2), 1, pred_proba.to_numpy()))
-        top_proba_values = pd.DataFrame(np.apply_along_axis(
-            lambda x: top_k_values(x, 2), 1, pred_proba.to_numpy()))
-        # print(top_proba)
-        # print(pred_proba*100)
-        # print(top_proba_values*100)
-        compt = 0
-        for i in range(len(top_proba)):
-            if top_proba.iloc[i, 1] == nothing_index:
-                if top_proba_values.iloc[i, 0] > thresh_add:
-                    compt += 1
-                    pred.iloc[i] = top_proba.iloc[i, 0]
-        print(compt)
-        pred = pred.to_numpy().reshape(-1, 1)
-        return pred
-
-    threshold_ew = 0.1
-    threshold_ns = 0.1
-    tresh_add_ew = 0.11
-    tresh_add_ns = 0.26
+    precision_thresh_ew = 0.1
+    precision_thresh_ns = 0.1
+    recall_thresh_ew = 0.11
+    recall_thresh_ns = 0.26
 
     # Rest of configuration, specific to this submission
     feature_cols = [
@@ -96,8 +63,8 @@ def main_submission(path_to_dataset, path_to_model):
 
     # Make predictions on the test data for EW
     test_data['Predicted_EW'] = le_EW.inverse_transform(
-        do_prediction(
-            model_EW, test_data[model_EW.feature_names_], threshold_ew, tresh_add_ew)
+        utils.dual_threshold_prediction(
+            model_EW, test_data[model_EW.feature_names_], precision_thresh_ew, recall_thresh_ew)
     )
 
     added_proba_feature_EW = pd.DataFrame(model_EW.predict_proba(
@@ -107,8 +74,8 @@ def main_submission(path_to_dataset, path_to_model):
 
     # Make predictions on the test data for NS
     test_data['Predicted_NS'] = le_NS.inverse_transform(
-        do_prediction(
-            model_NS, test_data[model_NS.feature_names_], threshold_ns, tresh_add_ns)
+        utils.dual_threshold_prediction(
+            model_NS, test_data[model_NS.feature_names_], precision_thresh_ns, recall_thresh_ns)
     )
 
     test_data['Predicted_EW'] = test_data['Predicted_EW'].mask(
@@ -123,7 +90,8 @@ def main_submission(path_to_dataset, path_to_model):
     # Save the test results to a csv file to be submitted to the challenge
     test_results.to_csv(
         TEST_DATA_DIR/'../test_labels_evaluation.csv', index=False)
-    print("Saved predictions to: {}".format(TEST_DATA_DIR))
+    print("Saved predictions to: {}".format(
+        TEST_DATA_DIR/'../test_labels_evaluation.csv'))
 
 
 if __name__ == '__main__':

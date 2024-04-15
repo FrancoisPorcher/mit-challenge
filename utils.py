@@ -753,3 +753,35 @@ def add_baseline_heuristic(data, objectId, starttime, endtime, feature_cols):
         data.loc[data.ObjectID == objectId], data_post_processing(nodes, starttime))
     return merged_df
 
+
+def dual_threshold_prediction(model, data, precision_thresh, recall_thresh):
+    def top_k(x, k):
+        ind = np.argpartition(x, -1*k)[-1*k:]
+        return ind[np.argsort(x[ind])]
+
+    def top_k_values(x, k):
+        ind = np.argpartition(x, -1*k)[-1*k:]
+        return x[ind][np.argsort(x[ind])]
+
+    # Precision threshold
+    # If proba is not sufficient, put the class to nothing
+    pred_proba = pd.DataFrame(model.predict(
+        data, prediction_type='Probability'))
+    pred = pred_proba.idxmax(1)
+    nothing_index = pred.value_counts().index[0]
+    pred.loc[pred_proba.max(1) < precision_thresh] = nothing_index
+
+    # Recall threshold
+    # If the second proba is sufficient and the first class is nothing, put the class to the second class
+    second_top_proba = pd.DataFrame(np.apply_along_axis(
+        lambda x: top_k(x, 2), 1, pred_proba.to_numpy()))
+    second_top_proba_values = pd.DataFrame(np.apply_along_axis(
+        lambda x: top_k_values(x, 2), 1, pred_proba.to_numpy()))
+
+    for i in range(len(second_top_proba)):
+        if second_top_proba.iloc[i, 1] == nothing_index:
+            if second_top_proba_values.iloc[i, 0] > recall_thresh:
+                pred.iloc[i] = second_top_proba.iloc[i, 0]
+
+    pred = pred.to_numpy().reshape(-1, 1)
+    return pred
