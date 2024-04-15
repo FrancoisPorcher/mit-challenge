@@ -1,5 +1,6 @@
 # Satellite Pattern-of-Life Solution: A SIMPLE MODEL AND ADVANCED STRATEGIES ARE ALL YOU NEED
 
+Representing Team QR_IS, we achieved fourth place in Phase I of the competition https://eval.ai/web/challenges/challenge-page/2164/overview.
 In this repository, we provide all the code needed to reproduce results.
 
 ## Prerequisits
@@ -31,3 +32,5 @@ Two arguments need to be provided:
 Example: python main_submission.py --path_to_dataset C:\Users\isaac\Documents\Challenge_Francois\splid-devkit\dataset\test --path_to_model C:\Users\isaac\Documents\Challenge_Francois\mit-challenge\trained_model_for_submission
 
 # Presentation of the code
+
+If we follow the description that we provide in the technical report, let focus on four steps that are necessary to obtain a trained model.
