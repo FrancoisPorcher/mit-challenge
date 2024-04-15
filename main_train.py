@@ -19,7 +19,7 @@ def main_train(path_to_dataset):
         valid_ratio=0.00001,
         lag_steps=6,
         tolerance=6,  # Default evaluation tolerance
-        n_estimators=1000
+        n_estimators=10
     )
 
     # Define the list of feature columns

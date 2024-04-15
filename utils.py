@@ -22,8 +22,6 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         data_df = pd.read_csv(data_file)
         data_df['ObjectID'] = int(data_file.stem)
         data_df['TimeIndex'] = range(len(data_df))
-        data_df['Time36'] = pd.Series(
-            np.tile(np.arange(1, 36+1), len(data_df))[:len(data_df)])
 
         new_feature_cols = list(feature_cols)  # Create a copy of feature_cols
 
@@ -69,13 +67,9 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
                                          on=['TimeIndex', 'ObjectID'],
                                          how='left')
 
-            # Fill 'unknown' values in 'EW' and 'NS' columns that come before the first valid observation
-            # merged_df['EW'].ffill(inplace=True)
-            # merged_df['NS'].ffill(inplace=True)
-
         merged_data = pd.concat([merged_data, merged_df])
 
-    # envelope feature
+    # Envelope feature
     enveloppe_feature = []
     for factor in ["Latitude (deg)", "Longitude (deg)",  "Altitude (m)"]:
         enveloppe_name = f'{factor}_enveloppe'
@@ -102,6 +96,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             # Add the lagged feature to new_feature_cols
             new_feature_cols.append(lag_col_name)
 
+    # Create diff features
     diff_features = []
     for col in ["Eccentricity",  "Semimajor Axis (m)",  "Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)",  "Latitude (deg)",
                 "Longitude (deg)",   "Altitude (m)", "Latitude (deg)_enveloppe", "Longitude (deg)_enveloppe",  "Altitude (m)_enveloppe"]:
@@ -112,6 +107,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             # Add the new feature to new_feature_cols
             new_feature_cols.append(diff_col_name)
 
+    # Create pct change features
     pct_features = []
     for col in ['Vx (m/s)', 'Vy (m/s)', 'Vz (m/s)',]:
         for i in [-1, 1]:
@@ -121,6 +117,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
             # Add the new feature to new_feature_cols
             new_feature_cols.append(pct_col_name)
 
+    # Create rolling features
     rolling_features = []
     for variable in ["Eccentricity",  "Semimajor Axis (m)", "Inclination (deg)",  "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)", "Altitude (m)",
                      "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)"]:
@@ -137,6 +134,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         rolling_features.append(added_data)
         new_feature_cols.append(rolling_mean_name)
 
+    # Create Charac features average
     charac_features = []
     for factor in ["Eccentricity", "Semimajor Axis (m)", "Inclination (deg)", "RAAN (deg)", "Argument of Periapsis (deg)", "True Anomaly (deg)", "Altitude (m)"]:
         charach_name = f'{factor}_mean_charac'
@@ -146,6 +144,7 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         charac_features.append(added_data)
         new_feature_cols.append(charach_name)
 
+    # Create Charac features std
     for factor in ["X (m)", "Y (m)", "Z (m)", "Vx (m/s)",  "Vy (m/s)", "Vz (m/s)", "Eccentricity", "Altitude (m)", "Inclination (deg)"]:
         charach_name = f'{factor}_std_charac'
         added_data = pd.merge(merged_data[['ObjectID', 'Timestamp']],
@@ -154,19 +153,11 @@ def tabularize_data(data_dir, feature_cols, ground_truth=None, lag_steps=1, add_
         charac_features.append(added_data)
         new_feature_cols.append(charach_name)
 
-    # seasonal_features = []
-    # for factor in ["Eccentricity", "Altitude (m)", "Inclination (deg)"]:
-    #     seasonal_name = f'{factor}_12_resid'
-    #     added_data = merged_data.groupby('ObjectID')[
-    #                              factor].apply(decompose, period=12).rename(seasonal_name)
-    #     added_data.index = merged_data.index
-    #     seasonal_features.append(added_data)
-    #     new_feature_cols.append(seasonal_name)
-
     # Add the lagged features to the DataFrame all at once
     merged_data = pd.concat(
-        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features, axis=1)  # + seasonal_features
+        [merged_data] + lagged_features + diff_features + pct_features + rolling_features + charac_features, axis=1)
 
+    # Add heurestic features
     if add_heurestic:
         dummies_ew = pd.get_dummies(merged_data[['EW_baseline_heuristic']])
         dummies_ns = pd.get_dummies(merged_data[['NS_baseline_heuristic']])
