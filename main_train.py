@@ -12,7 +12,7 @@ from fastcore.basics import Path, AttrDict
 from catboost import CatBoostClassifier
 
 
-def main(path_to_dataset):
+def main_train(path_to_dataset):
 
     config = AttrDict(
         challenge_data_dir=Path(path_to_dataset),
@@ -131,10 +131,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run training on the data')
 
     # Add arguments
-    parser.add_argument('path_to_dataset', type=str,
+    parser.add_argument('--path_to_dataset', type=str,
                         help='Path to dataset')
 
     # Parse arguments
     args = parser.parse_args()
     print(args.path_to_dataset)
-    main(args.path_to_dataset)
+    main_train(args.path_to_dataset)
