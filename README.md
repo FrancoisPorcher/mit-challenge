@@ -34,3 +34,9 @@ Example: python main_submission.py --path_to_dataset C:\Users\isaac\Documents\Ch
 ## Presentation of the code
 
 If we follow the description that we provide in the technical report, let focus on four steps that are necessary to obtain a trained model.
+1. Features engineering: Done in the python file utils.py with the tabularize_data function
+2. Model Separation and Recombination Strategy: 
+    - Gradient Boosting model initialization is done in the python file main_train.py
+    - Model 1, Model 2 and Model 3 are sequentially trained in the python file main_train.py
+3. Model stacking: Add Heuristic model is done in the python file utils.py within the tabularize_data function with add_baseline_heuristic
+4. Model prediction strategy: Dual Threshold mechanism is done using dual_threshold_prediction function in utils.py 
