@@ -63,9 +63,9 @@ Here is an exhaustive list of the 15 measures:
 - Vy (m/s)
 - Vz (m/s) 
 
-
-1. Lag: $f_i = r_{i-j}$ for $j \in {-6,-5,-4,-3,-2,-1,1,2,3,4,5,6}$ for all 15 measures
-2. Difference
+Here is an exhaustive list of the feature:
+1. Lag: $f_i = r_{i-j}$ for $j \in {-6,-5,-4,-3,-2,-1,1,2,3,4,5,6}$ for all 15 measures ($15 \times 12 = 180 features$)
+2. Difference: $f_i = r_i - r_{i-j}$ for $j \in {-2,-1,1,2}$ for Eccentricity, Semimajor Axis (m), Inclination (deg), RAAN (deg),Argument of Periapsis (deg), True Anomaly (deg),  Latitude (deg), Longitude (deg), Altitude (m) 
 3
 4
 5
