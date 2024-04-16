@@ -31,6 +31,8 @@ Two arguments need to be provided:
 
 Example: python main_submission.py --path_to_dataset C:\Users\isaac\Documents\Challenge_Francois\splid-devkit\dataset\test --path_to_model C:\Users\isaac\Documents\Challenge_Francois\mit-challenge\trained_model_for_submission
 
+You can use the trained model that trained_model_for_submission folder
+
 ## Presentation of the code
 
 If we follow the description that we provide in the technical report, let focus on four steps that are necessary to obtain a trained model.
@@ -43,10 +45,12 @@ If we follow the description that we provide in the technical report, let focus 
 
 ### Features engineering
 
-During this step, we create a lot of features that will have a high importance
+During this step, we create a lot of features that will have a high importance to have a performing model. Going from the raw data $r_i$ (where $i$ is the timestamp index), the feature $f_i$ is created using a transformation selected using intuition, visualization, experimentation and statistics.
 
 
-1. Envelope: "Latitude (deg)", "Longitude (deg)",  "Altitude (m)"
+1. Lag: $f_i = r_{i-j}$ for $j \in \{-6,-5,-4,-3,-2,-1,1,2,3,4,5,6\}$ 
+2. Difference
+Envelope: "Latitude (deg)", "Longitude (deg)",  "Altitude (m)"
 
 $$
 x = \frac{{-b \pm \sqrt{{b^2 - 4ac}}}}{{2a}}
