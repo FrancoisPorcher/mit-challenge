@@ -1,9 +1,9 @@
-# Satellite Pattern-of-Life Solution: A SIMPLE MODEL AND ADVANCED STRATEGIES ARE ALL YOU NEED
+# A simple model and advanced strategies are all you need
 
 Representing Team QR_IS, we achieved fourth place in Phase I of the competition https://eval.ai/web/challenges/challenge-page/2164/overview.
 In this repository, we provide all the code needed to reproduce results.
-
-## Prerequisits
+## Runing code
+### Prerequisites
 A python environement that contains these packages:
 - pandas ==  2.2.1
 - numpy == 1.26.4
@@ -13,7 +13,7 @@ A python environement that contains these packages:
 - catboost == 1.2.3
 
 
-## Training
+### Training
 The python file main_train.py is able to construct the model aimed at node detection.
 It will read all csv files containing satellite trajectories and the ground truth csv and will train the model.
 One argument need to be provided:
@@ -22,7 +22,7 @@ One argument need to be provided:
 
 Example: python main_train.py --path_to_dataset C:\Users\isaac\Documents\Challenge_Francois\splid-devkit\dataset
 
-## Test
+### Test
 The python file main_submission.py is able to read a trained model and use it on new data.
 Two arguments need to be provided:
 
@@ -31,6 +31,6 @@ Two arguments need to be provided:
 
 Example: python main_submission.py --path_to_dataset C:\Users\isaac\Documents\Challenge_Francois\splid-devkit\dataset\test --path_to_model C:\Users\isaac\Documents\Challenge_Francois\mit-challenge\trained_model_for_submission
 
-# Presentation of the code
+## Presentation of the code
 
 If we follow the description that we provide in the technical report, let focus on four steps that are necessary to obtain a trained model.
