@@ -40,3 +40,14 @@ If we follow the description that we provide in the technical report, let focus 
     - Model 1, Model 2 and Model 3 are sequentially trained in the python file main_train.py
 3. Model stacking: Add Heuristic model is done in the python file utils.py within the tabularize_data function with add_baseline_heuristic
 4. Model prediction strategy: Dual Threshold mechanism is done using dual_threshold_prediction function in utils.py 
+
+### Features engineering
+
+During this step, we create a lot of features that will have a high importance
+
+
+1. Envelope: "Latitude (deg)", "Longitude (deg)",  "Altitude (m)"
+
+$$
+x = \frac{{-b \pm \sqrt{{b^2 - 4ac}}}}{{2a}}
+$$
