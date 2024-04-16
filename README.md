@@ -46,7 +46,22 @@ If we follow the description that we provide in the technical report, let focus 
 ### Features engineering
 
 During this step, we create a lot of features that will have a high importance to have a performing model. Going from the raw data $r_i$ (where $i$ is the timestamp index), the feature $f_i$ is created using a transformation selected using intuition, visualization, experimentation and statistics. Raw data can be one of the 15 measures provided for all trajectory. 
-Here is an exhaustive list of the 15 measures: Eccentricity, Semimajor Axis (m), Inclination (deg), RAAN (deg), Argument of Periapsis (deg), True Anomaly (deg), Latitude (deg), Longitude (deg), Altitude (m), X (m), Y (m), Z (m), Vx (m/s), Vy (m/s),Vz (m/s) 
+Here is an exhaustive list of the 15 measures: 
+- Eccentricity
+- Semimajor Axis (m)
+- Inclination (deg)
+- RAAN (deg)
+- Argument of Periapsis (deg)
+- True Anomaly (deg)
+- Latitude (deg)
+- Longitude (deg)
+- Altitude (m)
+- X (m)
+- Y (m)
+- Z (m)
+- Vx (m/s)
+- Vy (m/s)
+- Vz (m/s) 
 
 
 1. Lag: $f_i = r_{i-j}$ for $j \in {-6,-5,-4,-3,-2,-1,1,2,3,4,5,6}$ for all 15 measures
