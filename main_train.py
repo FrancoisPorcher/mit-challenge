@@ -19,7 +19,7 @@ def main_train(path_to_dataset):
         valid_ratio=0.00001,
         lag_steps=6,
         tolerance=6,  # Default evaluation tolerance
-        n_estimators=10
+        n_estimators=1000
     )
 
     # Define the list of feature columns
@@ -53,7 +53,7 @@ def main_train(path_to_dataset):
                                                        ground_truth,
                                                        lag_steps=config.lag_steps,
                                                        add_heurestic=True,
-                                                       nb_of_ex=20)
+                                                       nb_of_ex=200000)
 
     data['EW'] = data['EW'].fillna('Nothing')
     data['NS'] = data['NS'].fillna('Nothing')
