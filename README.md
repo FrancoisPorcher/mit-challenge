@@ -66,7 +66,7 @@ Here is an exhaustive list of the 15 measures:
 Here is an exhaustive list of the feature:
 1. Lag: $f_i = r_{i-j}$ for $j \in {-6,-5,-4,-3,-2,-1,1,2,3,4,5,6}$ for all 15 measures ($15 \times 12 = 180 features$)
 2. Difference: $f_i = r_i - r_{i-j}$ for $j \in {-2,-1,1,2}$ for Eccentricity, Semimajor Axis (m), Inclination (deg), RAAN (deg),Argument of Periapsis (deg), True Anomaly (deg),  Latitude (deg), Longitude (deg), Altitude (m) ($9 \times 4 = 36 features$)
-3. Percent change: $f_i = \frac{r_i - r_{i-j}}{r_{i-j}} $ for $j \in {-1,1}$ for Vx (m/s), Vy (m/s), Vz (m/s) ($3 \times 2 = 6 features$)
+3. Percent change: $f_i = \frac{{r_i - r_{i-j}}}{{r_{i-j}}} $ for $j \in {-1,1}$ for Vx (m/s), Vy (m/s), Vz (m/s) ($3 \times 2 = 6 features$)
 4. 
 5. 
 Envelope: "Latitude (deg)", "Longitude (deg)",  "Altitude (m)"
