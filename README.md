@@ -74,4 +74,4 @@ Here is an exhaustive list of the trajectory-based feature *(257 features)*:
 
 Here is an exhaustive list of the saltelitte characterized feature *(16 features)*:
 1. Average on all the trajectory for  features: Eccentricity, Semimajor Axis (m), Inclination (deg), RAAN (deg), Argument of Periapsis (deg), True Anomaly (deg), Altitude (m)
-2. Std on all features: X (m), Y (m), Z (m), Vx (m/s),  Vy (m/s), Vz (m/s), Eccentricity, Altitude (m), Inclination (deg)
+2. Std on all the trajectory for  features: X (m), Y (m), Z (m), Vx (m/s),  Vy (m/s), Vz (m/s), Eccentricity, Altitude (m), Inclination (deg)
