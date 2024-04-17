@@ -4,7 +4,7 @@ Representing Team QR_IS, we achieved fourth place in Phase I of the competition 
 In this repository, we provide all the code needed to reproduce results.
 ## Runing code
 ### Prerequisites
-A python environement that contains these packages:
+A python environement that contains these packages (you have a requirements.txt to create the environement):
 - pandas ==  2.2.1
 - numpy == 1.26.4
 - fastcore ==  1.5.29 
